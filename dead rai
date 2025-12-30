@@ -1,0 +1,151 @@
+-- Bao Hub - Dead Rails (Rayfield GUI - Siêu đẹp, mượt, giống Rayfield chính hãng)
+-- Nút 1: Glass Push (Toggle) - Tự động đẩy quái (zombies) đi xa, slider chỉnh độ dài (studs)
+-- Nút 2: Get Kill Tool - Equip tool, lại gần quái > Click chuột = Quái CHẾT NGAY!
+-- Hỗ trợ PC/Mobile (Delta/Fluxus), Update mới nhất 2025 | No Key | Anti-Detect
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Bao Hub v1.0 - Dead Rails",
+   LoadingTitle = "Bao Hub Loading...",
+   LoadingSubtitle = "Dành riêng cho bạn ❤️",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "BaoHubDeadRails",
+      FileName = "BaoConfig"
+   },
+   KeySystem = false -- No key
+})
+
+local Tab = Window:CreateTab("🧟 Zombie Controls", 4483362458) -- Icon zombie
+
+local Section = Tab:CreateSection("Chức năng chính")
+
+-- Biến global
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local PushEnabled = false
+local MaxDist = 50
+local KillTool = nil
+
+-- Toggle Glass Push
+Tab:CreateToggle({
+   Name = "Glass Push (Auto Đẩy Quái)",
+   CurrentValue = false,
+   Flag = "GlassPush",
+   Callback = function(Value)
+      PushEnabled = Value
+   end,
+})
+
+-- Slider Độ dài đẩy
+Tab:CreateSlider({
+   Name = "Độ dài đẩy (Studs)",
+   Range = {5, 100},
+   Increment = 5,
+   CurrentValue = 50,
+   Flag = "PushDist",
+   Callback = function(Value)
+      MaxDist = Value
+   end,
+})
+
+-- Button Kill Tool
+Tab:CreateButton({
+   Name = KillTool and "Unequip Kill Tool" or "Get Kill Tool",
+   Callback = function()
+      if KillTool and KillTool.Parent then
+         KillTool:Destroy()
+         KillTool = nil
+         Rayfield:Notify({
+            Title = "Bao Hub",
+            Content = "Đã unequip Kill Tool!",
+            Duration = 3,
+            Image = 4483362458,
+         })
+         return
+      end
+
+      KillTool = Instance.new("Tool")
+      KillTool.Name = "Bao Kill Tool"
+      KillTool.RequiresHandle = false
+      KillTool.Parent = LocalPlayer.Backpack
+
+      KillTool.Activated:Connect(function()
+         local Mouse = LocalPlayer:GetMouse()
+         local target = Mouse.Target
+         if target then
+            local model = target:FindFirstAncestorWhichIsA("Model")
+            if model and model:FindFirstChild("Humanoid") and model:FindFirstChild("HumanoidRootPart") and model ~= LocalPlayer.Character then
+               local char = LocalPlayer.Character
+               if char and char:FindFirstChild("HumanoidRootPart") then
+                  local dist = (char.HumanoidRootPart.Position - model.HumanoidRootPart.Position).Magnitude
+                  if dist < 40 then -- Gần quái <40 studs
+                     model.Humanoid.Health = 0
+                     Rayfield:Notify({
+                        Title = "Kill Success!",
+                        Content = "Quái đã chết! 💀",
+                        Duration = 2,
+                     })
+                  end
+               end
+            end
+         end
+      end)
+
+      Rayfield:Notify({
+         Title = "Bao Hub",
+         Content = "Đã equip Kill Tool! Lại gần quái > Click để kill.",
+         Duration = 4,
+         Image = 4483362458,
+      })
+   end,
+})
+
+-- Auto Push Logic (Heartbeat)
+RunService.Heartbeat:Connect(function()
+   if PushEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+      local root = LocalPlayer.Character.HumanoidRootPart
+      for _, obj in pairs(workspace:GetDescendants()) do
+         if obj:IsA("Model") and obj ~= LocalPlayer.Character and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 and obj:FindFirstChild("HumanoidRootPart") then
+            local dist = (root.Position - obj.HumanoidRootPart.Position).Magnitude
+            if dist < MaxDist and dist > 0 then
+               local dir = (root.Position - obj.HumanoidRootPart.Position).Unit
+               local bv = Instance.new("BodyVelocity")
+               bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+               bv.Velocity = dir * 100 + Vector3.new(0, 30, 0) -- Đẩy mạnh + văng lên
+               bv.Parent = obj.HumanoidRootPart
+               task.wait(0.1)
+               if bv.Parent then bv:Destroy() end
+            end
+         end
+      end
+   end
+end)
+
+-- Extra: NoClip (Bonus)
+Tab:CreateToggle({
+   Name = "NoClip (Bay tường)",
+   CurrentValue = false,
+   Flag = "NoClip",
+   Callback = function(Value)
+      local char = LocalPlayer.Character
+      if char then
+         for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+               part.CanCollide = not Value
+            end
+         end
+      end
+   end,
+})
+
+Tab:CreateLabel("👑 Bao Hub Exclusive - Dead Rails 2025")
+
+Rayfield:Notify({
+   Title = "Bao Hub Loaded!",
+   Content = "Chúc farm vui! Toggle Glass > Chỉnh slider > Enjoy 🧟‍♂️🚂",
+   Duration = 5,
+   Image = 4483362458,
+})
